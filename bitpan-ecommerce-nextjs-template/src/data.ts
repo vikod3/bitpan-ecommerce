@@ -1,87 +1,89 @@
+import { supabase } from '@/lib/supabase'
+
+type OrderRow = {
+  id: string
+  number: string
+  status: string
+  email: string | null
+  customer_name: string | null
+  address: string[] | null
+  phone: string | null
+  subtotal: number
+  shipping: number
+  taxes: number
+  total: number
+  order_items: OrderItemRow[]
+}
+
+type OrderItemRow = {
+  id: string
+  name: string
+  handle: string
+  description: string
+  price: string
+  status: string
+  step: number
+  date: string
+  datetime: string
+  image_src: string
+  image_alt: string
+  quantity: number
+  size: string
+  color: string
+}
+
+function mapOrder(order: OrderRow) {
+  const address = Array.isArray(order.address) ? order.address : []
+  return {
+    number: order.number,
+    status: order.status,
+    invoiceHref: '#',
+    customerName: order.customer_name ?? '',
+    email: order.email ?? '',
+    address,
+    subtotal: order.subtotal ?? 0,
+    shipping: order.shipping ?? 0,
+    taxes: order.taxes ?? 0,
+    total: order.total ?? 0,
+    products: (order.order_items ?? []).map((item, index) => ({
+      id: index + 1,
+      name: item.name,
+      handle: item.handle,
+      description: item.description,
+      href: '/products/' + item.handle,
+      price: item.price,
+      status: item.status,
+      step: item.step,
+      date: item.date,
+      datetime: item.datetime,
+      address,
+      email: order.email ?? '',
+      phone: order.phone ?? '',
+      imageSrc: item.image_src,
+      imageAlt: item.image_alt,
+      quantity: item.quantity,
+      size: item.size,
+      color: item.color,
+    })),
+  }
+}
+
+const ORDER_SELECT =
+  'id, number, status, email, customer_name, address, phone, subtotal, shipping, taxes, total, order_items ( id, name, handle, description, price, status, step, date, datetime, image_src, image_alt, quantity, size, color )'
+
 export async function getOrder(number: string) {
-  return (await getOrders()).find((order) => order.number.toString() === number)
+  const { data, error } = await supabase.from('orders').select(ORDER_SELECT).eq('number', number).maybeSingle()
+  if (error || !data) return undefined
+  return mapOrder(data as unknown as OrderRow)
 }
 
 export async function getOrders() {
-  return [
-    {
-      number: '4376',
-      status: 'Delivered on January 08, 2028',
-      invoiceHref: '#',
-      products: [
-        {
-          id: 1,
-          name: 'Nomad Tumbler',
-          handle: 'leather-tote-bag',
-          description:
-            'This durable and portable insulated tumbler will keep your beverage at the perfect temperature during your next adventure.',
-          href: '#',
-          price: '35.00',
-          status: 'Preparing to ship',
-          step: 1,
-          date: 'March 24, 2021',
-          datetime: '2021-03-24',
-          address: ['Floyd Miles', '7363 Cynthia Pass', 'Toronto, ON N3Y 4H8'],
-          email: 'f•••@example.com',
-          phone: '1•••••••••40',
-          imageSrc: '/images/fashion/p1-1.jpg',
-          imageAlt: 'Insulated bottle with white base and black snap lid.',
-          quantity: 1,
-          size: 'M',
-          color: 'Black',
-        },
-      ],
-    },
-    {
-      number: '4657',
-      status: 'Delivered on January 11, 2025',
-      invoiceHref: '#',
-      products: [
-        {
-          id: 1,
-          name: 'Nomad Tumbler',
-          handle: 'leather-tote-bag',
-          description:
-            'This durable and portable insulated tumbler will keep your beverage at the perfect temperature during your next adventure.',
-          href: '#',
-          price: '35.00',
-          status: 'Preparing to ship',
-          step: 1,
-          date: 'March 24, 2021',
-          datetime: '2021-03-24',
-          address: ['Floyd Miles', '7363 Cynthia Pass', 'Toronto, ON N3Y 4H8'],
-          email: 'f•••@example.com',
-          phone: '1•••••••••40',
-          imageSrc: '/images/fashion/p2-1.jpg',
-          imageAlt: 'Insulated bottle with white base and black snap lid.',
-          quantity: 1,
-          size: 'XS',
-          color: 'Black Brown',
-        },
-        {
-          id: 2,
-          name: 'Minimalist Wristwatch',
-          handle: 'leather-tote-bag',
-          description: 'This contemporary wristwatch has a clean, minimalist look and high quality components.',
-          href: '#',
-          price: '149.00',
-          status: 'Shipped',
-          step: 0,
-          date: 'March 23, 2021',
-          datetime: '2021-03-23',
-          address: ['Floyd Miles', '7363 Cynthia Pass', 'Toronto, ON N3Y 4H8'],
-          email: 'f•••@example.com',
-          phone: '1•••••••••40',
-          imageSrc: '/images/fashion/p4-1.jpg',
-          imageAlt:
-            'Arm modeling wristwatch with black leather band, white watch face, thin watch hands, and fine time markings.',
-          quantity: 1,
-          size: 'XL',
-          color: 'White',
-        },
-      ],
-    },
-  ]
+  const { data, error } = await supabase
+    .from('orders')
+    .select(ORDER_SELECT)
+    .order('created_at', { ascending: false })
+  if (error || !data) return []
+  return (data as unknown as OrderRow[]).map(mapOrder)
 }
 
 export function getCountries() {

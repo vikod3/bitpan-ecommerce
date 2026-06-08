@@ -1,7 +1,7 @@
 import { Divider } from '@/components/divider'
 import { Heading } from '@/components/heading'
 import { Text } from '@/components/text'
-import { getCartProducts } from '@/data'
+import { getOrder } from '@/data'
 import { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -11,8 +11,31 @@ export const metadata: Metadata = {
   description: 'Your order has been successfully placed.',
 }
 
-export default async function Page() {
-  const products = await getCartProducts()
+function formatMoney(value: number) {
+  return '$' + value.toFixed(2)
+}
+
+export default async function Page({ searchParams }: { searchParams: Promise<{ number?: string }> }) {
+  const { number } = await searchParams
+  const order = number ? await getOrder(number) : undefined
+
+  const products = (order?.products ?? []).map((product) => ({
+    id: product.id,
+    name: product.name,
+    handle: product.handle,
+    imageSrc: product.imageSrc,
+    imageAlt: product.imageAlt,
+    color: product.color,
+    size: product.size,
+    quantity: product.quantity,
+    price: '$' + product.price,
+  }))
+
+  const subtotal = order?.subtotal ?? 0
+  const shipping = order?.shipping ?? 0
+  const taxes = order?.taxes ?? 0
+  const total = order?.total ?? 0
+  const shippingAddress = order?.address ?? []
 
   return (
     <>
@@ -33,8 +56,8 @@ export default async function Page() {
             </Text>
 
             <dl className="mt-16 text-sm">
-              <dt className="text-zinc-500 uppercase">Tracking number</dt>
-              <dd className="mt-2 font-medium text-zinc-950"># 551548931</dd>
+              <dt className="text-zinc-500 uppercase">Order number</dt>
+              <dd className="mt-2 font-medium text-zinc-950"># {order?.number ?? '—'}</dd>
             </dl>
 
             <ul
@@ -71,22 +94,22 @@ export default async function Page() {
             <dl className="space-y-6 border-t border-zinc-200 pt-6 text-sm font-medium text-zinc-500">
               <div className="flex justify-between">
                 <dt className="uppercase">Subtotal</dt>
-                <dd className="text-zinc-900">$72.00</dd>
+                <dd className="text-zinc-900">{formatMoney(subtotal)}</dd>
               </div>
 
               <div className="flex justify-between">
                 <dt className="uppercase">Shipping</dt>
-                <dd className="text-zinc-900">$8.00</dd>
+                <dd className="text-zinc-900">{formatMoney(shipping)}</dd>
               </div>
 
               <div className="flex justify-between">
                 <dt className="uppercase">Taxes</dt>
-                <dd className="text-zinc-900">$6.40</dd>
+                <dd className="text-zinc-900">{formatMoney(taxes)}</dd>
               </div>
 
               <div className="flex items-center justify-between border-t border-zinc-200 pt-6 text-zinc-900">
                 <dt className="text-base uppercase">Total</dt>
-                <dd className="text-base">$86.40</dd>
+                <dd className="text-base">{formatMoney(total)}</dd>
               </div>
             </dl>
 
@@ -95,9 +118,15 @@ export default async function Page() {
                 <dt className="font-medium text-zinc-900 uppercase">Shipping Address</dt>
                 <dd className="mt-2">
                   <address className="uppercase not-italic">
-                    <span className="block">Kristin Watson</span>
-                    <span className="block">7363 Cynthia Pass</span>
-                    <span className="block">Toronto, ON N3Y 4H8</span>
+                    {shippingAddress.length > 0 ? (
+                      shippingAddress.map((line, index) => (
+                        <span key={index} className="block">
+                          {line}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="block">—</span>
+                    )}
                   </address>
                 </dd>
               </div>

@@ -9,6 +9,7 @@ import { Select } from '@/components/select'
 import { getCartProducts } from '@/data'
 import { Metadata } from 'next'
 import Link from 'next/link'
+import { createOrder } from './actions'
 import DeliveryRadio from './delivery-radio'
 
 export const metadata: Metadata = {
@@ -25,7 +26,7 @@ export default async function Page() {
       <div className="mx-auto max-w-7xl pt-16 pb-24">
         <h2 className="sr-only">Checkout</h2>
 
-        <form className="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16 2xl:gap-x-20">
+        <form action={createOrder} className="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16 2xl:gap-x-20">
           <div>
             {/* Contact */}
             <div>
@@ -196,7 +197,7 @@ export default async function Page() {
               </dl>
 
               <div className="border-t border-zinc-200 px-4 py-6 sm:px-6">
-                <Button className="w-full font-medium" type="submit" href={'/order-successful'}>
+                <Button className="w-full font-medium" type="submit">
                   Confirm order
                 </Button>
                 <div className="mt-4 flex justify-center text-center text-sm text-zinc-500">
